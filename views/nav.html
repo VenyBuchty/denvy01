@@ -1,0 +1,53 @@
+<nav>
+    <div id="navLogo">
+        <a href="/">
+            <img src="/img/logo.png" alt="">
+        </a>
+    </div>
+    <div id="navMenu">
+        <ul>
+            <li id="menuProfile">
+                <a href="/user/profile">
+                    <img src="/img/user.png" alt="">
+                    <p>Profil</p>
+                </a>
+            </li>
+            <li id="menuAusfluege">
+                <a href="/ausfluege/">
+                    <img src="/img/destinace.png" alt="">
+                    <p>Meine Ausflüge</p>
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- HAMBURGER MENU -->
+    <div id="hamnav">
+        <p id="stripes">&#9776;</p>
+        <p id="exit">&#65794;</p>
+        <div id="hamitems">
+            <ul>
+                <li id="hamProfile"><a href="/user/profile"><img src="/img/user.png" alt="">Profile</a></li>
+                <hr>
+                <li id="hamAusfluege"><a href="/ausfluege"><img src="/img/destinace.png" alt="">Meine Ausflüge</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+<script src="lib/jquery-3.6.0.min.js"></script>
+<script>
+    $('#hamitems').hide()
+    $('#exit').hide()
+
+    $('#hamnav').on('click', () => {
+        $('#stripes').hide();
+        $('#hamitems').show()
+        $('#exit').show()
+    })
+
+    $(document).on("click", "#exit", function () {
+        $('#exit').hide()
+        $('#stripes').show();
+        $('#hamitems').hide()
+    })
+</script>

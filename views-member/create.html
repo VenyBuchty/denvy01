@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/leaflet.draw.css">
+    <link rel="stylesheet" href="/lib/sweetalert2.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+        integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+        crossorigin="" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-geosearch@3.3.2/dist/geosearch.css" />
+
+    <title>Denvy | Ausfluge erstellen</title>
+</head>
+
+<body>
+    <div id="nav-placeholder">
+
+    </div>
+
+    <div id="goBack">
+        <button id="goBackBtn">Zurück</button>
+    </div>
+
+    <div id="content">
+        <div id="detail">
+            <h1><input type="text" placeholder="Ausflugstitel" id="createTitle"></h1>
+            <div id="detailInfo">
+                <div id="detailText">
+                    <ul>
+                        <li><img src="/img/calendar.png" alt="">
+                            <input type="date" name="" id="createDate">
+                        </li>
+                        <li><img src="/img/friends.png" alt="">
+                            <input type="text" name="" id="createFriends" placeholder="Mitreisende">
+                        </li>
+                        <li><img src="/img/weather.png" alt="">
+                            <select name="" id="createWeather">
+
+                            </select>
+                            <select name="" id="createTemp">
+
+                            </select>
+                        </li>
+                        <li><img src="/img/location.png" alt="">
+                            <input type="text" id="createLocation"
+                                placeholder="Klick auf das Vergrößerungsglas in der Karte, um die Suche zu erleichtern">
+                        </li>
+                    </ul>
+                    <div id="karte">
+                    </div>
+                    <div id="ortdienst">
+                        <div id="timer">
+                            <p id="time"><span id="minutes">00</span>:<span id="seconds">00</span>:<span
+                                    id="tens">00</span></p>
+                            <p><span id="dist">0</span> meter</p>
+                        </div>
+                        <div id="ortBtns">
+                            <button id="start">
+                                Start
+                            </button>
+                            <button id="pause">
+                                | |
+                            </button>
+                            <button id="stop">
+                                Stop</button>
+                        </div>
+                        <p id="newErg">&#10133; Neues Ereigniss</p>
+                    </div>
+                </div>
+
+                <div id="ereignisse">
+                    <img src="/img/star.png" alt="" class="imageIcon">
+                    <div id="allErg">
+                        <p id="startText">Nutze die Kartenfunktionen, um deine Ereignisse aufzunehmen</p>
+                    </div>
+                </div>
+            </div>
+            <div id="notiz">
+                <img src="/img/pen.png" alt="">
+                <p><textarea rows="15" id="createNotiz"></textarea></p>
+
+            </div>
+            <button id="btnCreateSave" class="btnBasic">Speichern</button>
+        </div>
+    </div>
+    <footer class="footer">
+        <a href="https://buchtova.codefactory.live" target="_blank">
+            <p>© VenyBuchty | 2022</p>
+        </a>
+    </footer>
+    <script src="/lib/jquery-3.6.0.min.js"></script>
+    <script src="/Ereigniss.js"></script>
+    <script src="/lib/sweetalert2.all.min.js"></script>
+    <script src="/lib/moment.min.js"></script>
+    <script src="/lib/de-at.js"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+        integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+        crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-geosearch@3.3.2/dist/geosearch.umd.js"></script>
+    <script src="/lib/leaflet.draw.js"></script>
+    <script src="/lib/leafletIcons.js"></script>
+    <script>
+
+        //Zurück BTN
+        $('#goBackBtn').on('click', () => {
+            history.back()
+        })
+
+        //Navbar
+        $("#nav-placeholder").load("/nav.html", function () {
+            $('#menuProfile').removeClass("clickedProfile");
+            $('#menuAusfluege').addClass("clickedAusfluege");
+            $('#hamProfile').removeClass("clickedHamProfile");
+            $('#hamAusfluege').addClass("clickedHamAusfluege");
+        });
+
+
+
+
+
+        /* --------------WETTER UND TEMPERATUR ---------------------- */
+
+        let wetter = ['sonnig', 'klarer Himmel', 'wenige Wolken', 'aufgelockerte Bewölkung', 'Schauerregen', 'Regen', 'Gewitter', 'Schnee', 'Nebel']
+
+        wetter.forEach((w) => {
+            let option = `<option value="${w}">${w}</option>`
+            $('#createWeather').append(option);
+        });
+
+        for (let i = 50; i > -50; i = i - 2) {
+            let option = `<option value="${i}">${i}°C</option>`
+            $('#createTemp').append(option);
+
+        }
+
+        let options = $('option');
+        for (i = 0; i < options.length; i++) {
+            if (options[i].value === "20") {
+                options[i].selected = true;
+            }
+        }
+
+        /* ------------------------------LEAFLET EINSTELLEN ------------------------------------ */
+
+        let map = L.map('karte').setView([50.1, 14.4], 5);
+        L.tileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        // Search function
+        const searchControl = new GeoSearch.GeoSearchControl({
+            provider: new GeoSearch.OpenStreetMapProvider({
+                params: {
+                    'accept-language': 'de',
+                    addressdetails: 1,
+                }
+            })
+        });
+        map.addControl(searchControl);
+
+        // Zeichnen function
+        let drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+        let drawControl = new L.Control.Draw({
+            draw: {
+                polyline: true,
+                polygon: false,
+                rectangle: false,
+                circle: false,
+                circlemarker: false,
+                marker: true
+            }
+        });
+        map.addControl(drawControl)
+
+
+        //NOMINATIM - was sich befindet an angegebene Lat + Lng
+        function getGeoLabel(lat, lng) {
+            return $.ajax({
+                url: `https://nominatim.openstreetmap.org/reverse?format=geocodejson&lat=${lat}&lon=${lng}`,
+                method: 'get',
+            }).then(resp => {
+                let label = resp.features[0].properties.geocoding.label
+                let trimString = label.split(',').slice(0, 4)
+                let labelResult = trimString.join(',');
+                return labelResult
+            });
+        }
+
+        /* ------------------------------LEAFLET EREIGNISSE ERSTELLEN ------------------------------------ */
+        let ergArr = []
+        map.on('draw:created', async function (e) {
+            let type = e.layerType,
+                layer = e.layer,
+                latlng = layer?._latlngs || layer?._latlng || e?.latlng;
+            let markerObj = new Ereigniss(latlng)
+
+
+            if (type === 'marker') {
+                let markerIcon = new L.marker([latlng.lat, latlng.lng], {
+                    draggable: false,
+                    customId: markerObj.id
+                }).addTo(map)
+
+                markerObj.setIsMarker(true)
+                let foundLabel = await getGeoLabel(latlng.lat, latlng.lng)
+                markerObj.setGeoLabel(foundLabel)
+
+                let label = foundLabel
+                let trimLabel = label.split(',').slice(3, 4)
+
+
+                let markerCard = $(`<div class="ergCard">
+                            <div class="ergInfo">
+                            <p class="ergTextAnzeige" hidden></p>
+                            <textarea class="ergText"></textarea>
+                            <hr class="ergLine">
+                            <p class="lonlatErg">${markerObj.geoLabel}</p>
+                            <p class="ergTimeAnzeige" hidden></p>
+                                <input type="time" step="3600000" class="ergTime" />
+                                
+                            </div>
+                            <div class="ergBtn">
+                                <p class="ergDelete" data-deleteId="${markerObj.id}">&#10008;</p>
+                            </div>
+                    </div>`);
+                $('#allErg').append(markerCard)
+            }
+
+
+            if (type === 'polyline') {
+                let markerStartIcon = new L.marker([markerObj.startMarker.lat, markerObj.startMarker.lng], {
+                    draggable: false,
+                    customId: markerObj.id
+                }).addTo(map).bindTooltip('START').openTooltip()
+                markerStartIcon.setIcon(new iconGreen)
+
+                let markerEndIcon = new L.marker([markerObj.endMarker.lat, markerObj.endMarker.lng], {
+                    draggable: false,
+                    customId: markerObj.id
+                }).addTo(map).bindTooltip('END').openTooltip()
+                markerEndIcon.setIcon(new iconRed)
+
+                layer.options.customId = markerObj.id
+                drawnItems.addLayer(layer)
+
+                markerObj.setIsMarker(false)
+
+                let foundStartMarkerLabel = await getGeoLabel(markerObj.startMarker.lat, markerObj.startMarker.lng)
+                let foundEndMakerLabel = await getGeoLabel(markerObj.endMarker.lat, markerObj.endMarker.lng)
+
+                let label = foundStartMarkerLabel
+                let trimLabel = label.split(',').slice(3, 4)
+
+                markerObj.setGeoLabel(foundStartMarkerLabel)
+                markerObj.setGeoLabel(foundEndMakerLabel)
+
+
+                let distance = 0;
+                for (var i = 0; i < latlng.length - 1; i++) {
+                    distance += Math.floor(latlng[i].distanceTo(latlng[i + 1]))
+                }
+                markerObj.setDistance(distance)
+
+                let markerCard = $(`<div class="ergCard" data-id="${markerObj.id}">
+                                            <div class="ergInfo">
+                                                <p>Startpunkt:</p>
+                                                <p class="lonlatStart">${foundStartMarkerLabel}</p>
+                                                <p>Endpunkt:</p>
+                                                <p class="lonlatEnde">${foundEndMakerLabel}</p>
+                                                <hr class="ergLine">
+                                                <p>Länge:</p>
+                                                <p class="lonlatEnde">${distance.toLocaleString('de-DE')} meter</p>
+                                            </div>
+                                        <div class="ergBtn">
+                                <p class="ergDelete" data-deleteId="${markerObj.id}">&#10008;</p>
+                            </div>`);
+                $('#allErg').append(markerCard)
+            }
+
+            ergArr = [markerObj, ...ergArr]
+
+            $('#startText').hide()
+
+
+            $('.ergDelete').on('click', (e) => {
+                Swal.fire({
+                    title: 'Ereigniss löschen?',
+                    showDenyButton: true,
+                    confirmButtonText: 'Ja',
+                    confirmButtonColor: '#ff00009a',
+                    denyButtonColor: '#5aba99',
+                    denyButtonText: `Abbrechen`,
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        let deleteId = Number(e.currentTarget.dataset.deleteid)
+                        map.eachLayer(function (layer) {
+
+                            if (deleteId == layer.options.customId) {
+                                layer.remove()
+                            }
+                        })
+                        $(e.target).closest('.ergCard').remove();
+                        ergArr = ergArr.filter(ereigniss => {
+                            return ereigniss.id != e.currentTarget.dataset.deleteid
+                        })
+                    }
+                })
+
+            })
+        })
+
+
+
+        /* ------------------------------------------LEAFLET GPS AUFZEICHNUNG + EREIGNISSE------------------------------------------------ */
+
+        // Variablen deklaration
+        let latlngs = [];
+        let distNow = null;
+        let distShow = null;
+        let lastLoc = null;
+        let startMarker, startTime, pauseMarker, stopMarker, walkerMarker, endTime, timerInterval
+
+        //Stop-Uhr 
+        let minutes = 00;
+        let seconds = 00;
+        let tens = 00;
+        function startTimer() {
+            tens++;
+
+            if (tens <= 9) {
+                $('#tens').html("0" + tens)
+            }
+
+            if (tens > 9) {
+                $('#tens').html(tens)
+            }
+
+            if (tens > 99) {
+                seconds++;
+                $('#seconds').html("0" + seconds)
+                tens = 0;
+                $('#tens').html("0" + 0);
+            }
+
+            if (seconds > 9) {
+                $('#seconds').html(seconds)
+            }
+
+            if (seconds > 59) {
+                minutes++;
+                $('#minutes').html("0" + minutes)
+                seconds = 0;
+                $('#seconds').html("0" + 0);
+            }
+
+
+        }
+
+        //Polyline für GPS Aufzeichnung
+        let polylineGps = L.polyline([])
+        polylineGps.setStyle({
+            color: 'blue',
+            smoothFactor: 10.0
+        });
+
+
+
+        //Speicher Lat&Lngs von GPS Lokation
+        function onLocationFound(e) {
+            let currLoc = [e.latlng.lat, e.latlng.lng]
+            polylineGps.addLatLng(currLoc)
+
+
+            if (polylineGps._latlngs.length <= 1) {
+                startMarkerPolyline = L.marker(polylineGps._latlngs[0]).addTo(map)
+                startMarkerPolyline.setIcon(new iconGreen)
+                polylineGps.addLatLng(currLoc)
+                if (walkerMarker) {
+                    walkerMarker.remove()
+                }
+            }
+
+            if (lastLoc !== null) {
+                distNow = lastLoc.distanceTo(currLoc)
+                distShow = distShow + distNow
+                $('#dist').html(distShow.toFixed(0));
+                polylineGps.addLatLng(currLoc)
+                walkerMarker.remove()
+            }
+            lastLoc = L.latLng(currLoc);
+            walkerMarker = new L.marker(lastLoc, {
+                draggable: false,
+            }).addTo(map)
+            walkerMarker.setIcon(new iconWalk)
+
+        }
+
+
+        //Ereigniss erstellen "on click", nimm genaue location
+        $('#newErg').on('click', async () => {
+            let polylineArr = polylineGps.getLatLngs()
+            const lastGPS = polylineArr[polylineArr.length - 1]
+            let markerObj = new Ereigniss(lastGPS)
+
+            markerIcon = new L.marker([lastGPS.lat, lastGPS.lng], {
+                draggable: false,
+                customId: markerObj.id
+            }).addTo(map)
+
+            markerObj.setIsMarker(true)
+            let foundLabel = await getGeoLabel(lastGPS.lat, lastGPS.lng)
+            markerObj.setGeoLabel(foundLabel)
+
+            let markerCard = $(`<div class="ergCard">
+                    <div class="ergInfo">
+                    <p class="ergTextAnzeige" hidden></p>
+                    <textarea class="ergText"></textarea>
+                    <hr class="ergLine">
+                    <p class="lonlatErg">${markerObj.geoLabel}</p>
+                    <p class="ergTimeAnzeige" hidden></p>
+                        <input type="time" step="3600000" class="ergTime" />
+                    </div>
+                    <div class="ergBtn">
+                        <p class="ergDelete" data-deleteId="${markerObj.id}">&#10008;</p>
+                    </div>
+                    </div>`);
+            $('#allErg').append(markerCard)
+            ergArr = [markerObj, ...ergArr]
+        });
+
+
+
+        //GPS Buttons Einstellung
+        $('#stop').prop('disabled', true)
+        $('#pause').prop('disabled', true)
+
+        $('#start').on('click', () => {
+            $('#start').prop('disabled', true)
+            $('#pause').prop('disabled', false)
+            $('#stop').prop('disabled', false)
+            if (pauseMarker) {
+                pauseMarker.remove()
+            }
+            startTime = Date.now()
+            polylineGps.addTo(map);
+            map.locate({ setView: 11, watch: true });
+            map.on('locationfound', onLocationFound);
+            clearInterval(timerInterval);
+            timerInterval = setInterval(startTimer, 10);
+        })
+
+        $('#pause').on('click', () => {
+            clearInterval(timerInterval);
+            map.stopLocate()
+            $('#start').prop('disabled', false)
+            $('#pause').prop('disabled', true)
+            $('#stop').prop('disabled', false)
+            let polylineNow = polylineGps.getLatLngs()
+            let polyLastOrt = polylineNow[polylineNow.length - 1]
+            pauseMarker = new L.marker(polyLastOrt, {
+                draggable: false,
+            }).addTo(map)
+            pauseMarker.setIcon(new iconBlack).bindTooltip("Pause").openTooltip();
+            walkerMarker.remove()
+        })
+
+
+        $('#stop').on('click', async () => {
+            $('#start').prop('disabled', true)
+            $('#pause').prop('disabled', true)
+            $('#stop').prop('disabled', true)
+            walkerMarker.remove()
+            if (pauseMarker) {
+                pauseMarker.remove()
+            }
+            endTime = Date.now()
+            distNow = null;
+            distShow = null;
+            lastLoc = null;
+            clearInterval(timerInterval);
+            map.stopLocate()
+            let endDauer = $('#minutes').html() + ":" + $('#seconds').html()
+            let endDist = $('#dist').html()
+            $('#dist').html('0')
+            $('#minutes').html('00')
+            $('#seconds').html('00')
+            $('#tens').html('00')
+
+            let markerObj = new Ereigniss(polylineGps.getLatLngs())
+
+            let markerStartIconGps = new L.marker([markerObj.startMarker.lat, markerObj.startMarker.lng], {
+                draggable: false,
+                customId: markerObj.id
+            }).addTo(map).bindTooltip('START').openTooltip()
+            markerStartIconGps.setIcon(new iconGreen)
+
+            let markerEndIconGps = new L.marker([markerObj.endMarker.lat, markerObj.endMarker.lng], {
+                draggable: false,
+                customId: markerObj.id
+            }).addTo(map).bindTooltip('END').openTooltip()
+            markerEndIconGps.setIcon(new iconRed)
+
+            let polylineOnStop = new L.polyline(polylineGps.getLatLngs(), {
+                customId: markerObj.id,
+                color: "red"
+            }).addTo(map)
+
+            markerObj.setIsMarker(false)
+
+            let foundStartMarkerLabel = await getGeoLabel(markerObj.startMarker.lat, markerObj.startMarker.lng)
+            let foundEndMakerLabel = await getGeoLabel(markerObj.endMarker.lat, markerObj.endMarker.lng)
+
+            let label = foundStartMarkerLabel
+            let trimLabel = label.split(',').slice(3, 4)
+
+            markerObj.setGeoLabel(foundStartMarkerLabel)
+            markerObj.setGeoLabel(foundEndMakerLabel)
+            markerObj.setDistance(endDist)
+            markerObj.setDauer(endDauer)
+            markerObj.setStartTime(startTime)
+            markerObj.setEndTime(endTime)
+
+            let markerCard = $(`<div class="ergCard" data-id="${markerObj.id}">
+                                            <div class="ergInfo">
+                                                <p>Startpunkt:</p>
+                                                <p class="lonlatEnde">${moment(startTime).format('LT')}</p>
+                                                <p class="lonlatStart">${foundStartMarkerLabel}</p>
+                                                <p>Endpunkt:</p>
+                                                <p class="lonlatEnde">${moment(endTime).format('LT')}</p>
+                                                <p class="lonlatEnde">${foundEndMakerLabel}</p>
+                                                <hr class="ergLine">
+                                                    <div class="ergDistDauer">
+                                                        <div>
+                                                            <p>Länge:</p>
+                                                            <p class="lonlatEnde">${endDist} meter</p>
+                                                        </div>
+                                                        <div>
+                                                            <p>Dauer:</p>
+                                                            <p class="lonlatEnde">${endDauer}</p>
+                                                        </div>
+                                                </div>
+                                            </div>
+                                        <div class="ergBtn">
+                                <p class="ergDeleteGps" data-deleteId="${markerObj.id}">&#10008;</p>
+                            </div>`);
+            $('#allErg').append(markerCard)
+
+            ergArr = [markerObj, ...ergArr]
+
+
+            polylineGps.setLatLngs([])
+            map.removeLayer(startMarkerPolyline)
+            map.removeLayer(polylineGps)
+
+
+            $('.ergDeleteGps').on('click', (e) => {
+                Swal.fire({
+                    title: 'Ereigniss löschen?',
+                    showDenyButton: true,
+                    confirmButtonText: 'Ja',
+                    confirmButtonColor: '#ff00009a',
+                    denyButtonColor: '#5aba99',
+                    denyButtonText: `Abbrechen`,
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#start').prop('disabled', false)
+                        let deleteId = Number(e.currentTarget.dataset.deleteid)
+                        map.eachLayer(function (layer) {
+                            if (deleteId == polylineOnStop.options.customId) {
+                                polylineOnStop.remove()
+
+                            }
+                            if (deleteId == markerObj.id) {
+                                markerStartIconGps.remove()
+                                markerEndIconGps.remove()
+                            }
+                        })
+                        $(e.target).closest('.ergCard').remove();
+                        ergArr = ergArr.filter(ereigniss => {
+                            return ereigniss.id != e.currentTarget.dataset.deleteid
+                        })
+                    }
+                })
+            })
+        })
+
+
+        //Speichert alle Eingaben zu Ereigniss
+        function saveErg() {
+            let ergCardArr = $('.ergCard')
+            for (const einCard of ergCardArr) {
+                let ergId = $(einCard).find('.ergDelete').attr("data-deleteId")
+                let ergText = $(einCard).find('.ergText').val()
+                let ergTime = $(einCard).find('.ergTime').val()
+                for (erg of ergArr) {
+                    if (erg.id == ergId) {
+                        erg.setInfo(ergText).setTime(ergTime)
+                    }
+                }
+            }
+        }
+
+
+
+
+        /* -----------------------------------------SAVE BTN---------------------------------------------------- */
+        $('#btnCreateSave').on('click', () => {
+            saveErg()
+            let title = $('#createTitle')
+            let datum = $('#createDate')
+            let friends = $('#createFriends')
+            let weather = $('#createWeather')
+            let temp = $('#createTemp')
+            let ort = $('#createLocation')
+            let notiz = $('#createNotiz')
+            $.ajax({
+                url: '/ausfluege/create',
+                method: 'post',
+                data: {
+                    title: title.val(),
+                    datum: datum.val(),
+                    friends: friends.val(),
+                    weather: weather.val(),
+                    temp: temp.val(),
+                    ort: ort.val(),
+                    ereignisse: JSON.stringify(ergArr),
+                    notiz: notiz.val()
+                },
+                success: resp => {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Ausflug erstellt',
+                        text: '...gleich geht es weiter...',
+                        showConfirmButton: false,
+                        timer: 1500,
+                        timerProgressBar: true
+                    }).then(function () {
+                        window.location.href = '/detail?id=' + resp._id;
+                    });
+                },
+                error: resp => {
+                    title.css("background-color", "");
+                    datum.css("background-color", "");
+                    ort.css("background-color", "");
+                    let errors = resp.responseJSON.errors;
+                    let errorMsg = errors.map(function (err) {
+                        switch (err.param) {
+                            case 'title':
+                                title.css("background-color", '#F27474');
+                                break;
+                            case 'datum':
+                                datum.css("background-color", '#F27474');
+                                break;
+                            case 'ort':
+                                ort.css("background-color", '#F27474');
+                                break;
+
+                        }
+                        return err.msg
+                    }).join('<br /><li/>')
+
+                    Swal.fire({
+                        title: 'Oops, etwas ist schiefgelaufen!',
+                        html: '<div class="errorMsg"><li>' + errorMsg + '</div>',
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    })
+                }
+            })
+        })
+
+    </script>
+
+</body>
+
+</html>

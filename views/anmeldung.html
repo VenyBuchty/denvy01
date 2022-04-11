@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="lib/sweetalert2.min.css">
+    <title>Denvy | Anmeldung</title>
+</head>
+
+<body>
+    <div id="nav-placeholder">
+
+    </div>
+
+    <div id="content">
+        <div id="anmeldungContainer">
+            <div id="register" class="anmeldungForms">
+                <h3>Hier kannst du dich registrieren:</h3>
+                <input type="text" placeholder="Name" id="nameRegister">
+                <input type="text" placeholder="Benutzername" id="usernameRegister">
+                <input type="text" placeholder="E-mail" id="emailRegister">
+                <input type="password" placeholder="Passwort" id="pswRegister">
+                <button id="btnRegister">Registrieren</button>
+            </div>
+            <div id="login" class="anmeldungForms">
+                <h3>Bist du schon dabei?</h3>
+                <div id="loginFields">
+                    <input type="text" placeholder="Benutzername" id="usernameLogin">
+                    <input type="password" placeholder="Passwort" id="pswLogin">
+                </div>
+                <button id="btnLogin">Login</button>
+            </div>
+        </div>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" class="waves-profile">
+            <path fill="#f6f4f6" fill-opacity="1"
+                d="M0,256L0,224L42.4,224L42.4,32L84.7,32L84.7,160L127.1,160L127.1,96L169.4,96L169.4,224L211.8,224L211.8,32L254.1,32L254.1,192L296.5,192L296.5,32L338.8,32L338.8,320L381.2,320L381.2,192L423.5,192L423.5,0L465.9,0L465.9,192L508.2,192L508.2,96L550.6,96L550.6,192L592.9,192L592.9,128L635.3,128L635.3,128L677.6,128L677.6,288L720,288L720,288L762.4,288L762.4,128L804.7,128L804.7,64L847.1,64L847.1,224L889.4,224L889.4,320L931.8,320L931.8,32L974.1,32L974.1,288L1016.5,288L1016.5,192L1058.8,192L1058.8,256L1101.2,256L1101.2,32L1143.5,32L1143.5,320L1185.9,320L1185.9,32L1228.2,32L1228.2,288L1270.6,288L1270.6,128L1312.9,128L1312.9,160L1355.3,160L1355.3,64L1397.6,64L1397.6,96L1440,96L1440,0L1397.6,0L1397.6,0L1355.3,0L1355.3,0L1312.9,0L1312.9,0L1270.6,0L1270.6,0L1228.2,0L1228.2,0L1185.9,0L1185.9,0L1143.5,0L1143.5,0L1101.2,0L1101.2,0L1058.8,0L1058.8,0L1016.5,0L1016.5,0L974.1,0L974.1,0L931.8,0L931.8,0L889.4,0L889.4,0L847.1,0L847.1,0L804.7,0L804.7,0L762.4,0L762.4,0L720,0L720,0L677.6,0L677.6,0L635.3,0L635.3,0L592.9,0L592.9,0L550.6,0L550.6,0L508.2,0L508.2,0L465.9,0L465.9,0L423.5,0L423.5,0L381.2,0L381.2,0L338.8,0L338.8,0L296.5,0L296.5,0L254.1,0L254.1,0L211.8,0L211.8,0L169.4,0L169.4,0L127.1,0L127.1,0L84.7,0L84.7,0L42.4,0L42.4,0L0,0L0,0Z">
+            </path>
+        </svg>
+    </div>
+
+    <footer class="footer">
+        <a href="https://buchtova.codefactory.live" target="_blank">
+            <p>© VenyBuchty | 2022</p>
+        </a>
+    </footer>
+
+    <script src="lib/jquery-3.6.0.min.js"></script>
+    <script src="lib/sweetalert2.all.min.js"></script>
+    <script src="reg-log.js"></script>
+    <script>
+
+        $("#nav-placeholder").load("nav.html");
+
+    </script>
+</body>
+
+</html>

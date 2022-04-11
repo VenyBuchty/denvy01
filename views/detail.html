@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/glide.core.min.css">
+    <link rel="stylesheet" href="/css/glide.theme.min.css">
+    <link rel="stylesheet" href="/css/lightbox.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+        integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+        crossorigin="" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-geosearch@3.3.2/dist/geosearch.css" />
+    <title>Denvy | Ausflug detail</title>
+</head>
+
+<body>
+    <div id="nav-placeholder">
+
+    </div>
+
+    <div id="goBack">
+        <button id="goBackBtn">Zurück</button>
+    </div>
+
+
+    <div id="content">
+        <div id="detail">
+            <h1 id="detailTitle"></h1>
+            <p>Erstellt am: <span id="detailErstellt"> </span> </p>
+            <div id="detailInfo">
+                <div id="detailText">
+                    <ul>
+                        <li><img src="/img/calendar.png" alt="">
+                            <p id="detailDate"></p>
+                        </li>
+                        <li><img src="/img/friends.png" alt="">
+                            <p id="detailFriends"></p>
+                        </li>
+                        <li><img src="/img/weather.png" alt="">
+                            <p id="detailWeather"></p>|
+                            <p id="detailTemp"></p>
+                        </li>
+                        <li><img src="/img/location.png" alt="">
+                            <p id="detailOrt"></p>
+                        </li>
+                    </ul>
+                    <div id="karte">
+                    </div>
+                </div>
+                <div id="ereignisse">
+                    <img src="/img/star.png" alt="" class="imageIcon">
+                    <div id="allErg">
+                        <p id="keineErg">Keine Ereignisse hinterlegt</p>
+                    </div>
+                </div>
+            </div>
+            <div id="detailImg">
+                <img src="/img/photo.png" alt="" class="imageIcon">
+                <div class="glide">
+                    <div class="glide__track" data-glide-el="track">
+                        <ul class="glide__slides" id="imgThumbnails">
+
+                        </ul>
+                    </div>
+
+                    <div class="glide__arrows" data-glide-el="controls">
+                        <button class="glide__arrow glide__arrow--left" data-glide-dir="<">
+                            < </button>
+                                <button class="glide__arrow glide__arrow--right" data-glide-dir=">"> > </button>
+                    </div>
+                </div>
+                <form action="/ausfluege/uploadImgs" method="POST" enctype="multipart/form-data" id="imgAusflugForm">
+                    <input type="file" name="image" id="fileSearch">
+                    <input type="text" name="ausflugID" id="ausflugID" hidden>
+                    <button type="submit" id="submitImg">Hochladen</button>
+                </form>
+            </div>
+            <div id="notiz">
+                <img src="/img/pen.png" alt="">
+                <p id="detailNotiz"></p>
+            </div>
+
+            <div id="detailFooter">
+                <button id="btnDetailUpdate" class="btnBasic">Bearbeiten</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <a href="https://buchtova.codefactory.live" target="_blank">
+            <p>© VenyBuchty | 2022</p>
+        </a>
+    </footer>
+    <script src="lib/jquery-3.6.0.min.js"></script>
+    <script src="lib/moment.min.js"></script>
+    <script src="lib/de-at.js"></script>
+    <script src="lib/sweetalert2.all.min.js"></script>
+    <script src="lib/jquery-input-file-text.js"></script>
+    <script src="lib/lightbox.js"></script>
+    <script src="lib/glide.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+        integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+        crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-geosearch@3.3.2/dist/geosearch.umd.js"></script>
+    <script src="lib/leafletIcons.js"></script>
+    <script>
+        //Zurück BTN
+        $('#goBackBtn').on('click', () => {
+            history.back()
+        })
+
+        //Navbar
+        $("#nav-placeholder").load("/nav.html", function () {
+            $('#menuProfile').removeClass("clickedProfile");
+            $('#menuAusfluege').addClass("clickedAusfluege");
+            $('#hamProfile').removeClass("clickedHamProfile");
+            $('#hamAusfluege').addClass("clickedHamAusfluege");
+        });
+
+
+        /* IMG speichern Button */
+        $('#fileSearch').inputFileText({
+            text: 'Datei auswählen...'
+        });
+
+        $('#submitImg').prop('disabled', true);
+        $('input:file').on('change', function () {
+            $('#submitImg').prop('disabled', false);
+        });
+
+
+        /* ----------------------------LEAFLET und Ereignisse--------------------------------- */
+        let map = L.map('karte')
+        L.tileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        map.setView([50.1, 14.4], 5);
+
+        const full_url = document.URL;
+        const url_array = full_url.split('=')
+        const id = url_array[url_array.length - 1];
+        $('#ausflugID').val(id)
+        $.ajax({
+            url: '/ausfluege/detail/' + id,
+            method: 'get',
+            success: resp => {
+                $('#detailTitle').text(resp.title)
+                $('#detailDate').text(moment(resp.datum).format('LL'))
+                if (resp.friends != "") {
+                    $('#detailFriends').text(resp.friends)
+                } else {
+                    $('#detailFriends').text('---')
+                }
+                $('#detailWeather').text(resp.weather)
+                $('#detailTemp').text(resp.temp + '°C')
+                $('#detailOrt').text(resp.ort)
+                if (resp.notiz != "") {
+                    $('#detailNotiz').text(resp.notiz)
+                } else {
+                    $('#detailNotiz').text('Keine Notizen').css('text-align', 'center')
+                }
+                $('#detailErstellt').text(moment(resp.erstellt).format('LL'))
+                let imgs = $('#imgThumbnails');
+                let arrImgs = resp.bilder
+                if (arrImgs != "") {
+                    arrImgs.forEach(function (img) {
+                        let imgTag = `<a href="${img.url}" data-lightbox="ausflug"><li class="glide__slide"><img src="${img.url}" alt="" class="images-detail"></li></a>`
+                        imgs.append(imgTag)
+                    });
+                    glide.mount()
+                } else {
+                    let empty = `<li class="glide__slide"><img src="/img/focus.png" alt=""></li>`
+                    imgs.append(empty)
+                    glide.mount()
+                }
+
+
+
+                //Holt Data von DB und zeigt sie
+                let arrErg = JSON.parse(resp.ereignisse)
+                if (arrErg) {
+                    $('#keineErg').hide()
+                    let allCards = []
+                    arrErg.forEach(function (erg) {
+                        if (erg.isMarker) {
+                            let markerCard = $(`<div class="ergCard" data-id="${erg.id}" data-time="${erg.time}">
+                                                <div class="ergInfo">
+                                                    <p class="ergTextAnzeige">${erg.info}</p>
+                                                    <p class="lonlatErg">${erg.geoLabel}</p>
+                                                    ${erg.time ? '<p class="ergTimeAnzeige">' + erg.time + '</p>' : ''}
+                                                </div>
+                                            </div>`)
+                            allCards.push(markerCard)
+
+                            map.setView([erg.latlng.lat, erg.latlng.lng], 12);
+
+                            let marker = L.marker([erg.latlng.lat, erg.latlng.lng], { customId: erg.id, isMarker: true, isLayerGroup: false, isPolylineMarker: false })
+                            marker.addTo(map)
+                            marker.on('click', markerOnClick)
+                        } else {
+                            let markerCard = $(`<div class="ergCard" data-id="${erg.id}">
+                                            <div class="ergInfo">
+                                                <p class="lonlatStart">Startpunkt:</p>
+                                                ${erg.startTime ? '<p class="lonlatErg">' + moment(erg.startTime).format('LT') + '</p>' : ''}
+                                                <p>${erg.geoLabel[0]}</p>
+                                                <hr class="ergLine">
+                                                <p class="lonlatEnde">Endpunkt:</p>
+                                                ${erg.endTime ? '<p class="lonlatErg">' + moment(erg.endTime).format('LT') + '</p>' : ''}
+                                                <p>${erg.geoLabel[1]}</p>
+                                                <p class="lonlatDist">${erg.distance.toLocaleString('de-DE')} meter ${erg.dauer ? ' | ' + erg.dauer + ' dauer' : ''}</p>
+                                            </div >
+                                            </div >`);
+                            allCards.push(markerCard)
+
+
+
+                            let startMarker = L.marker([erg.startMarker.lat, erg.startMarker.lng], { customId: erg.id, icon: new iconGreen, isMarker: true, isLayerGroup: false, isStartMarker: true })
+                            let endMarker = L.marker([erg.endMarker.lat, erg.endMarker.lng], { customId: erg.id, icon: new iconRed, isMarker: true, isLayerGroup: false, isEndMarker: true })
+                            let polyline = L.polyline(erg.latlng, { customId: erg.id, color: "red", opacity: 0.8, weight: 5, isMarker: false, isLayerGroup: false, isPolylineMarker: true })
+                            let layerGroup = L.layerGroup([startMarker, endMarker, polyline], { customId: erg.id, isMarker: false, isLayerGroup: true, isPolylineMarker: true }).addTo(map)
+                            startMarker.on('click', markerOnClick).bindTooltip('START')
+                            endMarker.on('click', markerOnClick).bindTooltip('END')
+                            polyline.setStyle({
+                                smoothFactor: 15.0
+                            });
+                            map.setView([erg.startMarker.lat, erg.startMarker.lng], 12);
+                        }
+                    })
+                    const item = allCards.sort(function (a, b) {
+                        const Atime = $(a).attr("data-time");
+                        const Btime = $(b).attr("data-time");
+                        if (Atime > Btime) return 1;
+                        if (Atime < Btime) return -1;
+                        return 0;
+                    });
+                    $('#allErg').append(allCards)
+
+
+
+                    function markerOnClick(e) {
+                        let markerId = e.sourceTarget.options.customId
+                        let cardsArr = $('#allErg')[0].children
+                        map.eachLayer(function (layer) {
+                            if (layer.options.isMarker) {
+                                layer.setIcon(new iconBlue)
+                            }
+                            if (layer.options.isStartMarker) {
+                                layer.setIcon(new iconGreen)
+                            }
+                            if (layer.options.isEndMarker) {
+                                layer.setIcon(new iconRed)
+                            }
+                            if (markerId == layer.options.customId) {
+                                if (layer.options.isMarker || layer.options.isStartMarker || layer.options.isEndMarker) {
+                                    layer.setIcon(new iconYellow)
+                                }
+                            }
+                        })
+                        for (card of cardsArr) {
+                            card.style.background = '#fff'
+                            card.style.boxShadow = "none"
+                            if (card.dataset.id == markerId) {
+                                card.style.background = '#ffea8dab'
+                                card.style.boxShadow = "2px 2px 5px 0px rgba(0, 0, 0, 0.41)"
+                            }
+                        }
+                    }
+
+
+
+                    $('.ergCard').on('click', (e) => {
+                        let cardId = e.currentTarget.dataset.id
+                        let cardsArr = $('#allErg')[0].children
+                        map.eachLayer(function (layer) {
+                            if (layer.options.isMarker) {
+                                layer.setIcon(new iconBlue)
+                            }
+                            if (layer.options.isStartMarker) {
+                                layer.setIcon(new iconGreen)
+                            }
+                            if (layer.options.isEndMarker) {
+                                layer.setIcon(new iconRed)
+                            }
+                            if (cardId == layer.options.customId) {
+                                if (layer.options.isMarker) {
+                                    map.flyTo(layer._latlng, 15)
+                                    layer.setIcon(new iconYellow).openTooltip()
+                                }
+                                if (layer.options.isLayerGroup) {
+                                    layer.eachLayer((path) => {
+                                        if (!path.options.isMarker) {
+                                            let bounds = L.latLngBounds(path._latlngs)
+                                            map.flyToBounds(bounds)
+                                        } else {
+                                        }
+                                    })
+                                }
+                            }
+                        })
+                        for (card of cardsArr) {
+                            if (card.dataset.id == cardId) {
+                                card.style.background = '#ffea8dab'
+                                card.style.boxShadow = "2px 2px 5px 0px rgba(0, 0, 0, 0.41)"
+                            } else {
+                                card.style.background = '#fff'
+                                card.style.boxShadow = "none"
+                            }
+                        }
+                    })
+
+                } else {
+                    $('#keineErg').show()
+                }
+
+            },
+            error: resp => {
+                location.href = '/';
+                console.log(resp, 'error');
+            }
+        })
+
+        $('#btnDetailUpdate').on('click', () => {
+            window.location.href = '/update?id=' + id;
+        })
+
+
+        //Bilder Carousel
+        const sliders = document.querySelectorAll('.glide');
+        for (var i = 0; i < sliders.length; i++) {
+            var glide = new Glide(sliders[i], {
+                type: 'carousel',
+                perView: 5,
+                gap: 80,
+                breakpoints: {
+                    990: { perView: 4 },
+                    790: { perView: 3 },
+                    590: { perView: 2 },
+                    390: { perView: 1 }
+                }
+            });
+        }
+        lightbox.option({
+            'resizeDuration': 50,
+            'imageFadeDuration': 50,
+            'albumLabel': '',
+            'wrapAround': true,
+            'alwaysShowNavOnTouchDevices': true
+        })
+
+
+
+
+
+    </script>
+
+</body>
+
+</html>

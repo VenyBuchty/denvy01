@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/style.css">
+    <title>Denvy | Profil Update</title>
+</head>
+
+<body>
+    <div id="nav-placeholder">
+    </div>
+
+    <div id="goBack">
+        <button id="goBackBtn">Zurück</button>
+    </div>
+
+    <div id="content">
+        <div id="profile">
+            <h1>Mein Profil</h1>
+            <div id="profileInfo">
+                <div id="profileImgUpdate">
+                    <img src="" alt="" id="userImage">
+                    <form action="/user/upload" method="POST" enctype="multipart/form-data" id="imgUploadForm">
+                        <input type="file" name="image" id="fileSearch">
+                        <button type="submit" id="submitImg">Hochladen</button>
+                    </form>
+                </div>
+                <div id="profileBio">
+                    <ul>
+                        <li><img src="/img/nickname.png" alt=""><span id="updateUsername"></span></li>
+                        <li><img src="/img/name.png" alt=""> <input type="text" id="updateName"></li>
+                        <li><img src="/img/email.png" alt=""> <input type="text" id="updateEmail"></li>
+
+                        <li><img src="/img/delete.png" alt=""><button id="btnDeleteProfile">Profil löschen</button></li>
+                    </ul>
+                    <div id="footer">
+                        <p>Anzahl Ausflüge: <span id="ausflugNum"></span></p>
+                        <p>Denvy Nutzer seit: <span id="regDate"></span></p>
+                    </div>
+                </div>
+            </div>
+            <div id="regDoneButtons">
+                <button id="btnUpdateSave" class="btnBasic">Speichern</button>
+            </div>
+        </div>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" class="waves-profile">
+            <path fill="#f6f4f6" fill-opacity="1"
+                d="M0,128L0,192L42.4,192L42.4,192L84.7,192L84.7,32L127.1,32L127.1,320L169.4,320L169.4,160L211.8,160L211.8,32L254.1,32L254.1,256L296.5,256L296.5,128L338.8,128L338.8,288L381.2,288L381.2,96L423.5,96L423.5,192L465.9,192L465.9,0L508.2,0L508.2,160L550.6,160L550.6,32L592.9,32L592.9,160L635.3,160L635.3,32L677.6,32L677.6,96L720,96L720,288L762.4,288L762.4,96L804.7,96L804.7,32L847.1,32L847.1,192L889.4,192L889.4,160L931.8,160L931.8,128L974.1,128L974.1,224L1016.5,224L1016.5,224L1058.8,224L1058.8,128L1101.2,128L1101.2,128L1143.5,128L1143.5,32L1185.9,32L1185.9,288L1228.2,288L1228.2,128L1270.6,128L1270.6,32L1312.9,32L1312.9,256L1355.3,256L1355.3,128L1397.6,128L1397.6,32L1440,32L1440,0L1397.6,0L1397.6,0L1355.3,0L1355.3,0L1312.9,0L1312.9,0L1270.6,0L1270.6,0L1228.2,0L1228.2,0L1185.9,0L1185.9,0L1143.5,0L1143.5,0L1101.2,0L1101.2,0L1058.8,0L1058.8,0L1016.5,0L1016.5,0L974.1,0L974.1,0L931.8,0L931.8,0L889.4,0L889.4,0L847.1,0L847.1,0L804.7,0L804.7,0L762.4,0L762.4,0L720,0L720,0L677.6,0L677.6,0L635.3,0L635.3,0L592.9,0L592.9,0L550.6,0L550.6,0L508.2,0L508.2,0L465.9,0L465.9,0L423.5,0L423.5,0L381.2,0L381.2,0L338.8,0L338.8,0L296.5,0L296.5,0L254.1,0L254.1,0L211.8,0L211.8,0L169.4,0L169.4,0L127.1,0L127.1,0L84.7,0L84.7,0L42.4,0L42.4,0L0,0L0,0Z">
+            </path>
+        </svg>
+    </div>
+
+    <footer class="footer">
+        <a href="https://buchtova.codefactory.live" target="_blank">
+            <p>© VenyBuchty | 2022</p>
+        </a>
+    </footer>
+    <script src="/lib/moment.min.js"></script>
+    <script src="/lib/de-at.js"></script>
+    <script src="/lib/sweetalert2.all.min.js"></script>
+    <script src="/lib/jquery-3.6.0.min.js"></script>
+    <script src="/lib/jquery-input-file-text.js"></script>
+    <script>
+
+        //Zurück BTN
+        $('#goBackBtn').on('click', () => {
+            history.back()
+        })
+
+        //Navbar
+        $("#nav-placeholder").load("/nav.html", function () {
+            $('#menuProfile').addClass("clickedProfile");
+            $('#menuAusfluege').removeClass("clickedAusfluege");
+            $('#hamProfile').addClass("clickedHamProfile");
+            $('#hamAusfluege').removeClass("clickedHamAusfluege");
+        });
+
+
+        /* IMG speichern Button */
+        $('#fileSearch').inputFileText({
+            text: 'Bild auswählen...'
+        });
+
+        $('#submitImg').prop('disabled', true);
+        $('input:file').on('change', function () {
+            $('#submitImg').prop('disabled', false);
+        });
+
+
+        //User Info
+        $.ajax({
+            url: '/user/update',
+            method: 'post',
+            success: resp => {
+                $('#updateName').val(resp.name)
+                $('#updateUsername').text(resp.username)
+                $('#updateEmail').val(resp.email)
+                const ausfluege = [resp.ausfluege]
+                $('#ausflugNum').text(ausfluege.length)
+                $('#regDate').text(moment(resp.registered).format('LL'))
+                $("#userImage").attr("src", resp.image);
+            },
+            error: resp => {
+                console.log(resp, 'error');
+            }
+        })
+
+        //Speichere User Eingaben
+        $('#btnUpdateSave').on('click', () => {
+            let name = $('#updateName');
+            let email = $('#updateEmail');
+            $.ajax({
+                url: '/user/saveupdate',
+                method: 'post',
+                data: {
+                    name: name.val(),
+                    email: email.val()
+                },
+                success: resp => {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Daten aktualisiert',
+                        showConfirmButton: false,
+                        timer: 1500,
+                        timerProgressBar: true
+                    }).then(function () {
+                        window.location.href = '/user/profile.html';
+                    });
+                },
+                error: resp => {
+                    name.css("background-color", "");
+                    email.css("background-color", "");
+                    let errors = resp.responseJSON.errors;
+                    let errorMsg = errors.map(function (err) {
+                        switch (err.param) {
+                            case 'name':
+                                name.css("background-color", '#F27474');
+                                break;
+                            case 'email':
+                                email.css("background-color", '#F27474');
+                                break;
+                        }
+                        return err.msg
+                    }).join('<br /><li/>')
+
+                    Swal.fire({
+                        title: 'Oops, etwas ist schiefgelaufen!',
+                        html: '<div class="errorMsg"><li>' + errorMsg + '</div>',
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    })
+                }
+            })
+        })
+
+
+
+
+        //Delete User Profile
+        $('#btnDeleteProfile').on('click', () => {
+            Swal.fire({
+                title: 'Bist du dir sicher?',
+                text: 'Alle Daten werden unwiederruflich gelöscht',
+                showDenyButton: true,
+                confirmButtonText: 'Ja, Profil löschen',
+                confirmButtonColor: '#ff00009a',
+                denyButtonColor: '#5aba99',
+                denyButtonText: `Abbrechen`,
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: '/user/delete',
+                        method: 'delete',
+                        success: resp => {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Profil gelöscht',
+                                showConfirmButton: false,
+                                timer: 1500,
+                                timerProgressBar: true
+                            }).then(function () {
+                                window.location.href = 'index.html';
+                            });
+                        },
+                        error: resp => {
+                            console.log(resp, 'err');
+
+                        }
+                    })
+                }
+            })
+        })
+
+    </script>
+</body>
+
+</html>

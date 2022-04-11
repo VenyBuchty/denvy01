@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/leaflet.draw.css">
+
+    <link rel="stylesheet" href="lib/sweetalert2.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+        integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+        crossorigin="" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-geosearch@3.3.2/dist/geosearch.css" />
+    <title>Denvy | Ausflug update</title>
+</head>
+
+<body>
+    <div id="nav-placeholder">
+
+    </div>
+
+    <div id="goBack">
+        <button id="goBackBtn">Zurück</button>
+    </div>
+
+    <div id="content">
+        <div id="detail">
+            <h1><input type="text" placeholder="Ausflugstitel" id="updateTitle"></h1>
+            <div id="detailInfo">
+                <div id="detailText">
+                    <ul>
+                        <li><img src="/img/calendar.png" alt="">
+                            <input type="date" name="" id="updateDate">
+                        </li>
+                        <li><img src="/img/friends.png" alt="">
+                            <input type="text" name="" id="updateFriends" placeholder="Mitreisende">
+                        </li>
+                        <li><img src="/img/weather.png" alt="">
+                            <select name="" id="updateWeather">
+
+                            </select>
+                            <select name="" id="updateTemp">
+
+                            </select>
+                        </li>
+                        <li><img src="/img/location.png" alt="">
+                            <input type="text" id="updateLocation" placeholder="Ort">
+                        </li>
+                    </ul>
+                    <div id="karte">
+                    </div>
+                </div>
+                <div id="ereignisse">
+                    <img src="/img/star.png" alt="" class="imageIcon">
+                    <div id="allErg">
+                        <p id="keineErg">Keine Ereignisse hinterlegt</p>
+                    </div>
+                </div>
+            </div>
+            <div id="detailImg">
+                <img src="/img/photo.png" alt="" class="imageIcon">
+                <div id="imgDelete">
+                </div>
+            </div>
+            <div id="notiz">
+                <img src="/img/pen.png" alt="">
+                <p><textarea rows="15" id="updateNotiz"></textarea></p>
+
+            </div>
+            <div id="regDoneButtons">
+                <button id="btnUpdateSave" class="btnBasic">Speichern</button>
+                <button id="btnDetailLoeschen" class="btnBasic">Löschen</button>
+            </div>
+        </div>
+    </div>
+    <footer class="footer">
+        <a href="https://buchtova.codefactory.live" target="_blank">
+            <p>© VenyBuchty | 2022</p>
+        </a>
+    </footer>
+    <script src="lib/jquery-3.6.0.min.js"></script>
+    <script src="lib/moment.min.js"></script>
+    <script src="lib/de-at.js"></script>
+    <script src="Ereigniss.js"></script>
+    <script src="lib/sweetalert2.all.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+        integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+        crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-geosearch@3.3.2/dist/geosearch.umd.js"></script>
+    <script src="/lib/leafletIcons.js"></script>
+    <script src="/lib/leaflet.draw.js"></script>
+    <script>
+        //Zurück BTN
+        $('#goBackBtn').on('click', () => {
+            history.back()
+        })
+
+        //Navbar
+        $("#nav-placeholder").load("/nav.html", function () {
+            $('#menuProfile').removeClass("clickedProfile");
+            $('#menuAusfluege').addClass("clickedAusfluege");
+            $('#hamProfile').removeClass("clickedHamProfile");
+            $('#hamAusfluege').addClass("clickedHamAusfluege");
+        });
+
+
+
+        /* --------------LEAFLET EINSTELLEN ---------------------- */
+        let map = L.map('karte').setView([50.1, 14.4], 5);
+        L.tileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Search function
+        const searchControl = new GeoSearch.GeoSearchControl({
+            provider: new GeoSearch.OpenStreetMapProvider({
+                params: {
+                    'accept-language': 'de',
+                    addressdetails: 1,
+                }
+            })
+        });
+        map.addControl(searchControl);
+
+        // Zeichnen function
+        let drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+        let drawControl = new L.Control.Draw({
+            draw: {
+                polyline: true,
+                polygon: false,
+                rectangle: false,
+                circle: false,
+                circlemarker: false,
+                marker: true
+            }
+        });
+        map.addControl(drawControl)
+
+        /* --------------WETTER UND TEMPERATUR ---------------------- */
+
+        let wetter = ['sonnig', 'klarer Himmel', 'wenige Wolken', 'aufgelockerte Bewölkung', 'Schauerregen', 'Regen', 'Gewitter', 'Schnee', 'Nebel']
+
+        wetter.forEach((w) => {
+            let option = `<option value="${w}">${w}</option>`
+            $('#updateWeather').append(option);
+        });
+
+        for (let i = 50; i > -50; i = i - 2) {
+            let option = `<option value="${i}">${i}</option>`
+            $('#updateTemp').append(option);
+
+        }
+
+
+        /* ------------------LEAFLET und EREIGNISSE------------------------ */
+        let ergArr = []
+        const full_url = document.URL;
+        const url_array = full_url.split('=')
+        const id = url_array[url_array.length - 1];
+        $('#ausflugID').val(id);
+        $.ajax({
+            url: '/ausfluege/update/' + id,
+            method: 'get',
+            success: resp => {
+                $('#updateTitle').val(resp.title)
+                let d = new Date(resp.datum)
+                let datestring = d.getFullYear().toString() + '-' + (d.getMonth() + 1).toString().padStart(2, '0') + '-' + d.getDate().toString().padStart(2, '0');
+                $('#updateDate').val(datestring)
+                $('#updateFriends').val(resp.friends)
+                $('#updateWeather').val(resp.weather)
+                $('#updateTemp').val(resp.temp)
+                $('#updateLocation').val(resp.ort)
+                $('#updateNotiz').val(resp.notiz)
+                let imgs = $('#imgDelete');
+
+                var arrImgs = resp.bilder
+                if (arrImgs != "") {
+
+                    arrImgs.forEach(function (img) {
+                        let imgTag = `<div class="imgCont">
+                                        <img src="${img.url}" alt="" class="ausflugImg" data-ausflugID="${img.ausflugID}" data-publicID="${img.publicID}">
+                                            <div class="middle">
+                                                <div class="textX">&#10008;</div>
+                                            </div>
+                                        </div>`
+                        imgs.append(imgTag)
+                    })
+                } else {
+                    let empty = `<p>Keine Bilder vorhanden</p>`
+                    imgs.append(empty)
+
+                }
+
+
+                /* ---------------------Alte Eregnisse erstelen------------------------- */
+                ergArr = JSON.parse(resp.ereignisse)
+                if (ergArr) {
+                    $('#keineErg').hide()
+                    let markerArr = []
+                    ergArr.forEach(function (erg) {
+                        if (erg.isMarker) { //erstellt Card für Marker
+                            let markerCard = $(`<div class="ergCard" data-id="${erg.id}">
+                                            <div class="ergInfo">
+                                                <textarea class="ergText">${erg.info}</textarea>
+                                                <p class="ergTextAnzeige" hidden></p>
+                                                <hr class="ergLine">
+                                                <p class="lonlatErg">${erg.geoLabel}</p>
+                                                <p class="ergTimeAnzeige" hidden></p>
+                                                    <input type="time" step="3600000" class="ergTime" value="${erg.time}" />
+                                            </div>
+                                            <div class="ergBtn">
+                                                <p class="ergDelete" data-deleteId="${erg.id}">&#10008;</p>
+                                            </div>
+                                        </div> `);
+                            $('#allErg').append(markerCard)
+
+
+                            map.setView([erg.latlng.lat, erg.latlng.lng], 11);
+
+
+                            let marker = L.marker([erg.latlng.lat, erg.latlng.lng], { customId: erg.id, isMarker: true, isLayerGroup: false, isPolylineMarker: false })
+                            marker.addTo(map)
+                            marker.on('click', markerOnClick);
+                            markerArr.push(marker)
+
+                        } else { //Erstellt Card für Polyline
+                            let markerCard = $(`<div class="ergCard" data-id="${erg.id}">
+                                            <div class="ergInfo">
+                                                <p class="lonlatStart">Startpunkt:</p>
+                                                ${erg.startTime ? '<p class="lonlatErg">' + moment(erg.startTime).format('LT') + '</p>' : ''}
+                                                <p>${erg.geoLabel[0]}</p>
+                                                <hr class="ergLine">
+                                                <p class="lonlatEnde">Endpunkt:</p>
+                                                ${erg.endTime ? '<p class="lonlatErg">' + moment(erg.endTime).format('LT') + '</p>' : ''}
+                                                <p>${erg.geoLabel[1]}</p>
+                                                <p class="lonlatDist">${erg.distance.toLocaleString('de-DE')} meter ${erg.dauer ? ' | ' + erg.dauer + ' dauer' : ''}</p>
+                                            </div >
+                                        <div class="ergBtn">
+                                <p class="ergDelete" data-deleteId="${erg.id}">&#10008;</p>
+                            </div>`);
+                            $('#allErg').append(markerCard)
+
+                            let startMarker = L.marker([erg.startMarker.lat, erg.startMarker.lng], { customId: erg.id, icon: new iconGreen, isMarker: true, isLayerGroup: false, isStartMarker: true })
+                            let endMarker = L.marker([erg.endMarker.lat, erg.endMarker.lng], { customId: erg.id, icon: new iconRed, isMarker: true, isLayerGroup: false, isEndMarker: true })
+                            let polyline = L.polyline(erg.latlng, { customId: erg.id, color: "red", isMarker: false, isLayerGroup: false, isPolylineMarker: true })
+                            let layerGroup = L.layerGroup([startMarker, endMarker, polyline], { customId: erg.id, isMarker: false, isLayerGroup: true, isPolylineMarker: true }).addTo(map)
+                            startMarker.on('click', markerOnClick)
+                            endMarker.on('click', markerOnClick)
+                            polyline.setStyle({
+                                smoothFactor: 15.0
+                            });
+                        }
+
+
+                        $('.ergDelete').on('click', (e) => {
+                            Swal.fire({
+                                title: 'Ereigniss löschen?',
+                                showDenyButton: true,
+                                confirmButtonText: 'Ja',
+                                confirmButtonColor: '#ff00009a',
+                                denyButtonColor: '#5aba99',
+                                denyButtonText: `Abbrechen`,
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    if (ergArr.length > 0) {
+                                        $('#startText').show()
+                                    }
+                                    let deleteId = Number(e.currentTarget.dataset.deleteid)
+                                    map.eachLayer(function (layer) {
+                                        if (deleteId == layer.options.customId) {
+                                            layer.remove()
+                                        }
+                                    })
+                                    $(e.target).closest('.ergCard').remove();
+                                    ergArr = ergArr.filter(ereigniss => {
+                                        return ereigniss.id != e.currentTarget.dataset.deleteid
+                                    })
+                                }
+                            })
+                        })
+                    })
+
+                    function markerOnClick(e) {
+                        let markerId = e.sourceTarget.options.customId
+                        let cardsArr = $('#allErg')[0].children
+                        map.eachLayer(function (layer) {
+                            if (layer.options.isMarker) {
+                                layer.setIcon(new iconBlue)
+                            }
+                            if (layer.options.isStartMarker) {
+                                layer.setIcon(new iconGreen)
+                            }
+                            if (layer.options.isEndMarker) {
+                                layer.setIcon(new iconRed)
+                            }
+
+                            if (markerId == layer.options.customId) {
+                                if (layer.options.isMarker || layer.options.isStartMarker || layer.options.isEndMarker) {
+                                    layer.setIcon(new iconYellow)
+                                }
+                            }
+                        })
+                        for (card of cardsArr) {
+                            card.style.background = '#fff'
+                            card.style.boxShadow = "none"
+                            if (card.dataset.id == markerId) {
+                                card.style.background = '#ffea8dab'
+                                card.style.boxShadow = "2px 2px 5px 0px rgba(0, 0, 0, 0.41)"
+                            }
+                        }
+                    }
+
+
+                    $('.ergCard').on('click', (e) => {
+                        let cardId = e.currentTarget.dataset.id
+                        let cardsArr = $('#allErg')[0].children
+                        map.eachLayer(function (layer) {
+                            if (layer.options.isMarker) {
+                                layer.setIcon(new iconBlue)
+                            }
+                            if (layer.options.isStartMarker) {
+                                layer.setIcon(new iconGreen)
+                            }
+                            if (layer.options.isEndMarker) {
+                                layer.setIcon(new iconRed)
+                            }
+                            if (cardId == layer.options.customId) {
+                                if (layer.options.isMarker) {
+                                    map.flyTo(layer._latlng)
+                                    layer.setIcon(new iconYellow).openTooltip()
+                                }
+                                if (layer.options.isLayerGroup) {
+                                    layer.eachLayer((path) => {
+                                        if (!path.options.isMarker) {
+                                            let bounds = L.latLngBounds(path._latlngs)
+                                            map.flyToBounds(bounds)
+                                        } else {
+                                        }
+                                    })
+                                }
+                            }
+                        })
+
+                        for (card of cardsArr) {
+                            if (card.dataset.id == cardId) {
+                                card.style.background = '#ffea8dab'
+                                card.style.boxShadow = "2px 2px 5px 0px rgba(0, 0, 0, 0.41)"
+                            } else {
+                                card.style.background = '#fff'
+                                card.style.boxShadow = "none"
+                            }
+                        }
+                    })
+                }
+
+            },
+            error: resp => {
+                console.log(resp, 'error');
+            }
+        })
+
+
+        /* ---------------------Neue Eregnisse erstelen------------------------- */
+
+        //NOMINATIM - was sich befindet an angegebene Lat + Lng
+        function getGeoLabel(lat, lng) {
+            return $.ajax({
+                url: `https://nominatim.openstreetmap.org/reverse?format=geocodejson&lat=${lat}&lon=${lng}`,
+                method: 'get',
+            }).then(resp => {
+                let label = resp.features[0].properties.geocoding.label
+                let trimString = label.split(',').slice(0, 4)
+                let labelResult = trimString.join(',');
+                return labelResult
+            });
+        }
+
+        // Neue Ereignisse setzen
+        map.on('draw:created', async function (e) {
+            let type = e.layerType,
+                layer = e.layer,
+                latlng = layer._latlngs || layer._latlng;
+            let markerObj = new Ereigniss(latlng)
+
+
+            if (type === 'marker') {
+                markerIcon = new L.marker([latlng.lat, latlng.lng], {
+                    draggable: false,
+                    customId: markerObj.id
+                }).addTo(map)
+
+                markerObj.setIsMarker(true)
+                let foundLabel = await getGeoLabel(latlng.lat, latlng.lng)
+                markerObj.setGeoLabel(foundLabel)
+
+                let markerCard = $(`<div class="ergCard">
+                            <div class="ergInfo">
+                            <p class="ergTextAnzeige" hidden></p>
+                            <textarea class="ergText"></textarea>
+                            <hr class="ergLine">
+                            <p class="lonlatErg">${markerObj.geoLabel}</p>
+                            <p class="ergTimeAnzeige" hidden></p>
+                                <input type="time" step="3600000" class="ergTime" />
+                            </div>
+                            <div class="ergBtn">
+                                <p class="ergDelete" data-deleteId="${markerObj.id}">&#10008;</p>
+                            </div>
+                    </div>`);
+                $('#allErg').append(markerCard)
+            }
+
+
+            if (type === 'polyline') {
+                markerStartIcon = new L.marker([markerObj.startMarker.lat, markerObj.startMarker.lng], {
+                    draggable: false,
+                    customId: markerObj.id
+                }).addTo(map)
+
+                markerEndIcon = new L.marker([markerObj.endMarker.lat, markerObj.endMarker.lng], {
+                    draggable: false,
+                    customId: markerObj.id
+                }).addTo(map)
+
+                layer.options.customId = markerObj.id
+                drawnItems.addLayer(layer)
+
+                markerObj.setIsMarker(false)
+
+                let foundStartMarkerLabel = await getGeoLabel(markerObj.startMarker.lat, markerObj.startMarker.lng)
+                let foundEndMakerLabel = await getGeoLabel(markerObj.endMarker.lat, markerObj.endMarker.lng)
+
+                markerObj.setGeoLabel(foundStartMarkerLabel)
+                markerObj.setGeoLabel(foundEndMakerLabel)
+
+
+                let distance = 0;
+                for (var i = 0; i < latlng.length - 1; i++) {
+                    distance += Math.floor(latlng[i].distanceTo(latlng[i + 1]))
+                }
+                markerObj.setDistance(distance)
+
+                let markerCard = $(`<div class="ergCard" data-id="${markerObj.id}">
+                                            <div class="ergInfo">
+                                                <p>Startpunkt:</p>
+                                                <p class="lonlatStart">${foundStartMarkerLabel}</p>
+                                                <hr class="ergLine">
+                                                <p>Endpunkt:</p>
+                                                <p class="lonlatEnde">${foundEndMakerLabel}</p>
+                                                <p>Länge:</p>
+                                                <p class="lonlatEnde">${distance.toLocaleString('de-DE')} meter</p>
+                                            </div>
+                                        <div class="ergBtn">
+                                <p class="ergDelete" data-deleteId="${markerObj.id}">&#10008;</p>
+                            </div>`);
+                $('#allErg').append(markerCard)
+            }
+            ergArr = [markerObj, ...ergArr]
+        })
+
+
+        //Speichert alle Eingaben zu Ereigniss
+        function saveErg() {
+            let ergCardArr = $('.ergCard')
+            for (const einCard of ergCardArr) {
+                let ergId = $(einCard).find('.ergDelete').attr("data-deleteId")
+                let ergText = $(einCard).find('.ergText').val()
+                let ergTime = $(einCard).find('.ergTime').val()
+                for (erg of ergArr) {
+                    if (erg.id == ergId) {
+                        if (erg.setInfo) {
+                            erg.setInfo(ergText).setTime(ergTime)
+                        }
+                        erg.info = ergText
+                        erg.time = ergTime
+                    }
+                }
+            }
+        }
+
+        /* ---------------------------UPDATE SAVE--------------------------------- */
+
+        $('#btnUpdateSave').on('click', () => {
+            saveErg()
+            let title = $('#updateTitle')
+            let datum = $('#updateDate')
+            let friends = $('#updateFriends')
+            let weather = $('#updateWeather')
+            let temp = $('#updateTemp')
+            let ort = $('#updateLocation')
+            let notiz = $('#updateNotiz')
+            $.ajax({
+                url: '/ausfluege/saveupdate',
+                method: 'post',
+                data: {
+                    _id: id,
+                    title: title.val(),
+                    datum: datum.val(),
+                    friends: friends.val(),
+                    weather: weather.val(),
+                    temp: temp.val(),
+                    ort: ort.val(),
+                    ereignisse: JSON.stringify(ergArr),
+                    notiz: notiz.val()
+                },
+                success: resp => {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Änderungen gespeichert',
+                        text: '...gleich geht es weiter...',
+                        showConfirmButton: false,
+                        timer: 1500,
+                        timerProgressBar: true
+                    }).then(function () {
+                        window.location.href = '/detail?id=' + resp._id;
+                    });
+                },
+                error: resp => {
+                    title.css("background-color", "");
+                    datum.css("background-color", "");
+                    ort.css("background-color", "");
+                    let errors = resp.responseJSON.errors;
+                    let errorMsg = errors.map(function (err) {
+                        switch (err.param) {
+                            case 'title':
+                                title.css("background-color", '#F27474');
+                                break;
+                            case 'datum':
+                                datum.css("background-color", '#F27474');
+                                break;
+                            case 'ort':
+                                ort.css("background-color", '#F27474');
+                                break;
+
+                        }
+                        return err.msg
+                    }).join('<br /><li/>')
+
+                    Swal.fire({
+                        title: 'Oops, etwas ist schiefgelaufen!',
+                        html: '<div class="errorMsg"><li>' + errorMsg + '</div>',
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    })
+                }
+            })
+        })
+
+
+        /* --------------------------IMG DELETE------------------------------- */
+        $('#imgDelete').on('click', '.ausflugImg', (e) => {
+            Swal.fire({
+                title: 'Foto löschen?',
+                icon: 'warning',
+                showDenyButton: true,
+                confirmButtonColor: '#ff00009a',
+                denyButtonColor: '#5aba99',
+                confirmButtonText: 'Löschen',
+                denyButtonText: 'Abbrechen'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: '/ausfluege/deleteImg',
+                        method: 'post',
+                        data: {
+                            publicID: e.currentTarget.dataset.publicid,
+                            ausflugID: e.currentTarget.dataset.ausflugid,
+                        },
+                        success: resp => {
+                            window.location.replace('/update?id=' + e.currentTarget.dataset.ausflugid);
+                        },
+                        error: resp => {
+                            console.log(resp, 'error');
+                        }
+
+                    })
+                }
+            })
+        })
+
+
+        /* --------------------------AUSFLUG DELETE------------------------------- */
+        $('#btnDetailLoeschen').on('click', () => {
+            Swal.fire({
+                title: 'Bist du dir sicher?',
+                text: 'Alle Daten werden unwiederruflich gelöscht',
+                showDenyButton: true,
+                confirmButtonText: 'Ja, Ausflug löschen',
+                confirmButtonColor: '#ff00009a',
+                denyButtonColor: '#5aba99',
+                denyButtonText: `Abbrechen`,
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: '/ausfluege/delete/' + id,
+                        method: 'delete',
+                        success: resp => {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Ausflug gelöscht',
+                                showConfirmButton: false,
+                                timer: 1500,
+                                timerProgressBar: true
+                            }).then(function () {
+                                window.location.href = '/ausfluege/ausfluege.html';
+                            });
+                        },
+                        error: resp => {
+                            console.log(resp, 'err');
+
+                        }
+                    })
+                }
+            })
+        })
+
+    </script>
+
+</body>
+
+</html>
